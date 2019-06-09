@@ -1,0 +1,18 @@
+{
+    "elements": [
+        { "name": "DeviceID",		"type": "NumberSpinner",	"caption": "Device ID"},
+        { "name": "Mode",			"type": "Select",			"caption": "Mode",  "options": [
+                { "label": "RGB+W", "value": 0},
+                { "label": "Split Channels", "value": 1}
+            ]
+        },
+        { "name": "DimSpeed",		"type": "NumberSpinner",	"caption": "Dimming speed", "suffix":"Seconds"}
+   ],
+    "actions": [
+        { "name": "ValueR", "type": "NumberSpinner", "caption": "Red" },
+        { "name": "ValueG",	"type": "NumberSpinner", "caption": "Green"},
+        { "name": "ValueB",	"type": "NumberSpinner", "caption": "Blue"},
+        { "name": "ValueW",	"type": "NumberSpinner", "caption": "White"},
+        { "type": "Button", "label": "Set RGBW", "onClick": "PJX_SetRGBW($id, $ValueR, $ValueG, $ValueB, $ValueW);"}
+    ]
+}

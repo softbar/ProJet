@@ -1,0 +1,24 @@
+{
+     "translations": {
+        "de": {
+            "Device ID": "Ger\u00e4t-ID",
+            "Mode": "Modus",
+            "RGB+W": "RGB+W",
+            "Split Channels": "Teile Kan\u00e4le",
+            "R": "Rot",
+            "G": "Grün",
+            "B": "Blau",
+            "W": "Weiß",
+            "Set RGBW": "RGBW setzen",
+            "Red":"Rot",
+            "Green":"Grün",
+            "Blue":"Blau",
+            "White":"Weiß",
+            "Color":"Farbe",
+            "State":"Zustand",
+            "Level":"Helligkeit",
+            "Dimming speed":"Dim Geschwindigkeit",
+            "Seconds": "Sekunden"
+        }
+    }
+}

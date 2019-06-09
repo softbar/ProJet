@@ -1,0 +1,11 @@
+{
+	"id": "{5638FDC0-C112-PROJ-DE01-201905120000}",
+	"name": "ProJet",
+	"type": 3,
+	"vendor": "Xaver Bauer",
+	"aliases":["ProJet RGBW-868 LED Stripe"],
+	"parentRequirements": ["{9DD17B0B-030F-4849-8BFF-88EB4BB414BA}"],
+	"childRequirements": [],
+	"implemented": ["{7C307DE6-093B-4E83-AF0B-116B50569EF4}"],
+	"prefix": "PJX"
+}

@@ -1,0 +1,13 @@
+{  
+"id": "{5638FDC0-C110-4112-DE01-201905120000}",  
+"author": "Xaver Bauer <xaver65@gmail.com>",
+"name": "Xavers Module",
+"url": "",
+"compatibility": {
+	"version": "4.2",
+	"date": 1492639200
+},
+"version": "1.18.9",  
+"build": 1189,
+"date": 1515864450
+}
