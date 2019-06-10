@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['projet_20module_20_2f_20ips_2d868_20stripe',['ProJet Module / IPS-868 Stripe',['../md__c_1__i_p-_symcon_modules__pro_jet__r_e_a_d_m_e.html',1,'']]],
-  ['projet_20module_20_2f_20ips_2d868_20stripe',['ProJet Module / IPS-868 Stripe',['../md__c_1__i_p-_symcon_modules__pro_jet__r_e_a_d_m_e__d_e.html',1,'']]],
-  ['projet',['ProJet',['../class_pro_jet.html',1,'']]]
+  ['connectparent',['ConnectParent',['../class_i_p_s_module.html#aff0ae429fa02b5448467f6d31f8cae8f',1,'IPSModule']]],
+  ['create',['Create',['../class_pro_jet.html#a5ca1e7d38b3f061d233770abc079fe14',1,'ProJet\Create()'],['../class_i_p_s_module.html#a393d26b97c3314ed0e2589ad7b0e8805',1,'IPSModule\Create()']]]
 ];

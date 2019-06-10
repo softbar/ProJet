@@ -94,31 +94,31 @@ $(document).ready(function(){initNavTree('md__c_1__i_p-_symcon_modules__pro_jet_
 <li>Dimming speed If greater than 0 then all changes of the color, brightness or the white value are executed as a Dim operation</li>
 </ul>
 </li>
-<li>SetState (IpsInstanceID, true || false):<ul>
+<li>PJX_SetState (IpsInstanceID, true || false):<ul>
 <li>Allows switching on / off and saves or loads the last RGB + W values</li>
 </ul>
 </li>
-<li>SetLevel (IpsInstanceID, Brightness)<ul>
+<li>PJX_SetLevel (IpsInstanceID, Brightness)<ul>
 <li>Regulate the RGB brightness taking into account the set color</li>
 </ul>
 </li>
-<li>SetWhite (IpsInstanceID, Brightness)<ul>
+<li>PJX_SetWhite (IpsInstanceID, Brightness)<ul>
 <li>Regulate the brightness of the "white" channel</li>
 </ul>
 </li>
-<li>DimUp (IpsInstanceID)<ul>
+<li>PJX_DimUp (IpsInstanceID)<ul>
 <li>Increases the RGB brightness by 5. If the dim level is increased by 5 when the light is off, the last saved RGB-W value will be used as the basis</li>
 </ul>
 </li>
-<li>DimDown (IpsInstanceID)<ul>
+<li>PJX_DimDown (IpsInstanceID)<ul>
 <li>Decreases the DimLevel by 5 and saves the last RGB-W value as a basis</li>
 </ul>
 </li>
 </ul>
 <p>The following functions correspond to the IPS-868 Stripe</p><ul>
-<li>SetRGBW (IpsInstanceID, Red, Green, Blue, White)</li>
-<li>DimRGBW (IpsInstanceID, Red, Time, Green, Time, Blue, Time, White, Time)</li>
-<li>RunProgram (IpsInstanceID, ProgramID)</li>
+<li>PJX_SetRGBW (IpsInstanceID, Red, Green, Blue, White)</li>
+<li>PJX_DimRGBW (IpsInstanceID, Red, Time, Green, Time, Blue, Time, White, Time)</li>
+<li>PJX_RunProgram (IpsInstanceID, ProgramID)</li>
 </ul>
 <p>Have fun ;-) </p>
 </div></div><!-- contents -->

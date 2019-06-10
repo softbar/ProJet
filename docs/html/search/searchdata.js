@@ -1,9 +1,10 @@
 var indexSectionsWithContent =
 {
-  0: "acdprs",
-  1: "p",
-  2: "acdrs",
-  3: "p"
+  0: "$_acdefgimprstuw",
+  1: "ip",
+  2: "_acdefgmrstuw",
+  3: "$",
+  4: "p"
 };
 
 var indexSectionNames =
@@ -11,7 +12,8 @@ var indexSectionNames =
   0: "all",
   1: "classes",
   2: "functions",
-  3: "pages"
+  3: "variables",
+  4: "pages"
 };
 
 var indexSectionLabels =
@@ -19,6 +21,7 @@ var indexSectionLabels =
   0: "All",
   1: "Classes",
   2: "Functions",
-  3: "Pages"
+  3: "Variables",
+  4: "Pages"
 };
 

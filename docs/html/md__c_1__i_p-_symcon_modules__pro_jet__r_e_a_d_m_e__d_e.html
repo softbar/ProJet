@@ -91,31 +91,31 @@ $(document).ready(function(){initNavTree('md__c_1__i_p-_symcon_modules__pro_jet_
 <div class="contents">
 <div class="textblock"><p>Diese Module erweitert das IPS-868 Stripe Module um folgende möglichkeiten</p><ul>
 <li>Konfiguration<ul>
-<li>Dim Speed If greater than 0 then all changes in color, brightness or white value are executed as a Dim operation</li>
+<li>DimGeschwindigkeit Wenn größer als 0, werden alle Änderungen in Farbe, Helligkeit oder Weißwert als Dimmoperation ausgeführt</li>
 </ul>
 </li>
-<li>SetState(IpsInstanceID, true||false):<ul>
+<li>PJX_SetState(IpsInstanceID, true||false):<ul>
 <li>Ermöglicht das Ein/Ausschalten und speichert bzw läd die letzten RGB+W Werte</li>
 </ul>
 </li>
-<li>SetLevel(IpsInstanceID, Helligkeit) <br />
+<li>PJX_SetLevel(IpsInstanceID, Helligkeit) <br />
  - Regulieren der RGB Helligkeit unter Berücksichtigung der eingestellten Farbe</li>
-<li>SetWhite(IpsInstanceID, Helligkeit) <br />
+<li>PJX_SetWhite(IpsInstanceID, Helligkeit) <br />
  - Regulieren der Helligkeit des "weiß" Kanals</li>
-<li>DimUp(IpsInstanceID)<ul>
+<li>PJX_DimUp(IpsInstanceID)<ul>
 <li>Erhöht die RGB Helligkeit um 5 , wenn das Licht vorher aus ist wird der zuletzt gespeicherte RGB-W Wert als Grundlage benutzt</li>
 </ul>
 </li>
-<li>DimDown(IpsInstanceID)<ul>
+<li>PJX_DimDown(IpsInstanceID)<ul>
 <li>Veringert den DimLevel um 5 und speichert den letzten RGB-W Wert als Grundlage</li>
 </ul>
 </li>
 </ul>
 <p>Die folgenden Funktionen entsprechen dem IPS-868 Stripe</p>
 <ul>
-<li>SetRGBW(IpsInstanceID, Rot,Grün,Blau,Weiß)</li>
-<li>DimRGBW(IpsInstanceID, Rot,Zeit,Grün,Zeit,Blau,Zeit,Weiß,Zeit)</li>
-<li>RunProgram(IpsInstanceID, ProgramID)</li>
+<li>PJX_SetRGBW(IpsInstanceID, Rot,Grün,Blau,Weiß)</li>
+<li>PJX_DimRGBW(IpsInstanceID, Rot,Zeit,Grün,Zeit,Blau,Zeit,Weiß,Zeit)</li>
+<li>PJX_RunProgram(IpsInstanceID, ProgramID)</li>
 </ul>
 <p>Viel Spass ;-) </p>
 </div></div><!-- contents -->

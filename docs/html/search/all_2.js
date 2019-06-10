@@ -1,6 +1,4 @@
 var searchData=
 [
-  ['dimdown',['DimDown',['../class_pro_jet.html#a68092218e72510aa22ea2758ce2d602f',1,'ProJet']]],
-  ['dimrgbw',['DimRGBW',['../class_pro_jet.html#a3e96a3346ff72e28be54fe453d6089c6',1,'ProJet']]],
-  ['dimup',['DimUp',['../class_pro_jet.html#aa6361521783f7d249ea82ba896161134',1,'ProJet']]]
+  ['applychanges',['ApplyChanges',['../class_pro_jet.html#a58ad1f5327c6706097e05b6ec56ecced',1,'ProJet\ApplyChanges()'],['../class_i_p_s_module.html#a39a278c0b326ff827059e0ab842b914b',1,'IPSModule\ApplyChanges()']]]
 ];
