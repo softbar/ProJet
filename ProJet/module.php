@@ -1,256 +1,260 @@
 <?php
-/**
- * @author Xavier
- *
- */
-class ProJet extends IPSModule {
-	/**
-	 * {@inheritDoc}
-	 * @see IPSModule::Create()
-	 */
-	public function Create(){
-		parent::Create();
- 		$this->registerPropertyInteger('DeviceID',144);
- 		$this->registerPropertyInteger('Mode',0);
- 		$this->registerPropertyInteger('DimSpeed',0);
+#TODO Message Sink einfügen
+const 
+	RGB_RED = 0,
+	RGB_GREEN=1,
+	RGB_BLUE=2;
+
+class rgb {
+	public static function fromInt(int $Color){
+		return [ RGB_RED=>($Color >> 16) & 0xFF, RGB_GREEN=>($Color >> 8)  & 0xFF,	RGB_BLUE=> ($Color & 0xFF ) ];
 	}
-	/**
-	 * {@inheritDoc}
-	 * @see IPSModule::ApplyChanges()
-	 */
-	public function ApplyChanges(){
+	public static function toInt(int $Red, int $Green , int $Blue){
+		return ($Red << 16) + ($Green << 8) + $Blue;
+	}
+	public static function setLevel(array &$rgb, $NewLevel, $OldLevel=null){
+		if(is_null($OldLevel))$OldLevel=round(max($rgb)/2.55);
+		if($OldLevel==$NewLevel)return false;
+		foreach($rgb as &$v){
+			$v=round(($v/$OldLevel)*$NewLevel);
+			if($v>255)$v=255;elseif($v>0)$v--;
+		}	
+		return true;
+	}	
+}
+
+class ProJetX extends IPSModule {
+	function Create(){
+		parent::Create();
+ 		$this->RegisterPropertyInteger('DeviceID',144);
+ 		$this->RegisterPropertyInteger('Mode',0);
+ 		$this->RegisterPropertyInteger('DimSpeed',0);
+ 		$this->RegisterPropertyBoolean('DisableWhiteChannel', true);
+ 		$this->RegisterPropertyInteger('SyncClient',0);
+ 		
+ 		$this->RegisterAttributeInteger('LAST_COLOR', 0);
+ 		$this->RegisterAttributeInteger('LAST_WHITE', 0);
+	}
+	function ApplyChanges(){
 		parent::ApplyChanges();
 		$this->ConnectParent("{995946C3-7995-48A5-86E1-6FB16C3A0F8A}");
 		$this->registerVariableBoolean('STATE',$this->Translate('State'),'~Switch',0);
  		$this->registerVariableInteger('LEVEL',$this->Translate('Level'),'~Intensity.100',1);
 		$this->registerVariableInteger('COLOR',$this->Translate('Color'),'~HexColor',2);
- 		$this->registerVariableInteger('WHITE',$this->Translate('White'),'~Intensity.255',9);
- 		$this->MaintainActions(['STATE','LEVEL','COLOR','WHITE'],true);
+		$actions = ['STATE','LEVEL','COLOR'];
+		if($this->ReadPropertyBoolean('DisableWhiteChannel')){
+			@$this->unregisterVariable('WHITE');
+		}
+		else {
+			$actions[]='WHITE';
+			$this->registerVariableInteger('WHITE',$this->Translate('White'),'~Intensity.255',9);
+		}
  		if($this->ReadPropertyInteger('Mode')==0){ // Color Mode
-			$this->MaintainActions(['RED','GREEN','BLUE'],false);
- 			@$this->unregisterVariable('RED');
+			@$this->unregisterVariable('RED');
  			@$this->unregisterVariable('GREEN');
  			@$this->unregisterVariable('BLUE');
- 		}else{ // RGB Split Mode
- 			$RGB=$this->toRGB($this->getValueByIdent('COLOR'));
- 			if($id=$this->registerVariableInteger('RED',$this->Translate('Red'),'~Intensity.255',2))SetValue($id, $RGB[RGB_RED]);
- 			if($id=$this->registerVariableInteger('GREEN',$this->Translate('Green'),'~Intensity.255',3))SetValue($id, $RGB[RGB_GREEN]);
- 			if($id=$this->registerVariableInteger('BLUE',$this->Translate('Blue'),'~Intensity.255',4))SetValue($id, $RGB[RGB_BLUE]);
-			$this->MaintainActions(['RED','GREEN','BLUE'],true);
+ 		}else{ // RGB Mode
+ 			$rgb=rgb::fromInt($this->getValue('COLOR'));
+ 			if($id=$this->registerVariableInteger('RED',$this->Translate('Red'),'~Intensity.255',2))SetValue($id, $rgb[RGB_RED]);
+ 			if($id=$this->registerVariableInteger('GREEN',$this->Translate('Green'),'~Intensity.255',3))SetValue($id, $rgb[RGB_GREEN]);
+ 			if($id=$this->registerVariableInteger('BLUE',$this->Translate('Blue'),'~Intensity.255',4))SetValue($id, $rgb[RGB_BLUE]);
+			$actions=array_merge($actions,['RED','GREEN','BLUE']);
  		}
+		$this->_enableActions($actions);
+		$this->_getSyncClientID();
+		
   	}
-	/**
-	 * {@inheritDoc}
-	 * @see IPSModule::RequestAction()
-	 */
-	public function RequestAction($ident, $value){
+	function RequestAction($ident, $value){
 		switch($ident){
-			case 'STATE': $this->SetState($value); break;
+ 			case 'STATE': $this->SetState($value); break;
    			case 'LEVEL': $this->SetLevel($value); break;
  			case 'COLOR': $this->SetColor($value); break;
- 			case 'WHITE': $this->_setWhite($value); break;
- 			case 'RED'	: $this->_setColor(RGB_RED, $value); break;
-   			case 'GREEN': $this->_setColor(RGB_GREEN,$value); break;
-   			case 'BLUE'	: $this->_setColor (RGB_BLUE,$value); break;
-   			default : echo "Unknown action $ident";
+   			case 'WHITE': $this->SetWhite($value); break;			   			
+ 			case 'RED'	: $this->SetRGBW($value, $this->getValue('GREEN'),$this->getValue('BLUE'),$this->getValue('WHITE')); break;
+   			case 'GREEN': $this->SetRGBW($this->getValue('RED'),$value,$this->getValue('BLUE'),$this->getValue('WHITE')); 
+   			case 'BLUE'	: $this->SetRGBW($this->getValue('RED'),$this->getValue('GREEN'),$value, $this->getValue('WHITE')); 
 		}
 	}
-
- 	/** @brief Switch power on / of
- 	 * @param bool $On If true then on otherwise off
- 	 * @return boolean If command sucessfully
- 	 */
- 	public function SetState(bool $On){
- 		if($this->getValueByIdent('STATE')===$On)return true;
- 		return $On? $this->_upState():$this->_downState();
+ 	function ReceiveData($JSONString){
+ 		$this->SendDebug(__FUNCTION__,'Message::'.$JSONString,0);
+ 	}	 
+	
+ 	function GetConfigurationForm(){
+ 		if($this->GetStatus()!=102){
+ 			$f=json_decode(file_get_contents(__DIR__.'/form.json'),true);
+ 			$f['status']=[
+ 				['code'=>300,'icon'=>'error','caption'=>$this->GetBuffer('LastError') ]	
+ 			];
+ 			return json_encode($f);
+ 		}
  	}
- 	/** @brief Set current color value
- 	 * @param int $Color New color
- 	 * @return boolean
- 	 */
+ 	public function SetState(bool $StateOn){
+ 		if($this->getValue('STATE')===$StateOn)return true;
+ 		return $StateOn? $this->_upState():$this->_downState();
+ 	}
+	
  	public function SetColor(int  $Color){
-  		if($this->getValueByIdent('COLOR')==$Color) return false;
-  		if($Color==0)$this->_saveState();
-  		$rgb=$this->toRGB($Color);
+  		if($this->GetValue('COLOR')==$Color) return;
+  		$rgb=rgb::fromInt($Color);
  		if($dimSpeed=$this->ReadPropertyInteger('DimSpeed'))
-			return $this->DimRGBW($rgb[RGB_RED], $dimSpeed, $rgb[RGB_GREEN], $dimSpeed, $rgb[RGB_BLUE], $dimSpeed, intval($this->getValueByIdent('WHITE')), $dimSpeed);	
-		return $this->SetRGBW($rgb[RGB_RED], $rgb[RGB_GREEN], $rgb[RGB_BLUE], intval($this->getValueByIdent('WHITE')));	
+			return $this->DimRGBW($rgb[RGB_RED], $dimSpeed, $rgb[RGB_GREEN], $dimSpeed, $rgb[RGB_BLUE], $dimSpeed, intval($this->getValue('WHITE')), $dimSpeed);	
+		return $this->SetRGBW($rgb[RGB_RED], $rgb[RGB_GREEN], $rgb[RGB_BLUE], intval($this->getValue('WHITE')));	
   	}
-  	/**
-  	 * @param int $NewWhite
-  	 */
-  	public function SetWhite(int $NewWhite){
-  		$this->_setWhite($NewWhite); 
-  	}
- 	/**
- 	 * @param int $NewLevel
- 	 * @return boolean
- 	 */
- 	public function SetLevel(int $NewLevel){
- 		if($NewLevel>100)$NewLevel=100;elseif($NewLevel<0)$NewLevel=0;
-  		if($this->getValueByIdent('LEVEL')==$NewLevel) return true;
-   		if(!($color=$this->getValueByIdent('COLOR')) && $NewLevel>0){ 
-		   	if(!($color=intval($this->GetBuffer('OnColor'))))$color=8421504;
-			if(!($w=$this->getValueByIdent('WHITE'))){
-				$w=	intval($this->GetBuffer('OnWhite'));	   
-  			}
-		}else $w=$this->getValueByIdent('WHITE');
-  		$rgb=$this->toRGB($color);
-		$oldLevel=max($rgb)/2.55;
-		if((int)round($oldLevel)==$NewLevel){
-			return false;
-		}
-		if($NewLevel==0){
-			$this->_saveState();
-		}
-		foreach($rgb as $k=>$v){
-			$rgb[$k]=(int)round(($v/$oldLevel)*$NewLevel);
-		}
+ 	public function SetLevel(int $DimLevel){
+ 		if($DimLevel>100)$DimLevel=100;elseif($DimLevel<0)$DimLevel=0;
+  		if($this->GetValue('LEVEL')==$DimLevel) return true;
+ 		$color = $this->getValue('COLOR');
+ 		if(!$color)$color = $this->ReadAttributeInteger('LAST_COLOR');
+ 		
+  		
+  		$rgb=$color? rgb::fromInt($this->getValue('COLOR')):[128,128,128];
+ 		if(!rgb::setLevel($rgb, $DimLevel))return true;
  		if($dimSpeed=$this->ReadPropertyInteger('DimSpeed'))
-			return $this->DimRGBW($rgb[RGB_RED], $dimSpeed, $rgb[RGB_GREEN], $dimSpeed, $rgb[RGB_BLUE], $dimSpeed, $w, $dimSpeed);	
-		return $this->SetRGBW($rgb[RGB_RED], $rgb[RGB_GREEN], $rgb[RGB_BLUE], $w);	
+			return $this->DimRGBW($rgb[RGB_RED], $dimSpeed, $rgb[RGB_GREEN], $dimSpeed, $rgb[RGB_BLUE], $dimSpeed, intval($this->getValue('WHITE')), $dimSpeed);	
+		return $this->SetRGBW($rgb[RGB_RED], $rgb[RGB_GREEN], $rgb[RGB_BLUE], intval($this->getValue('WHITE')));	
  	}
- 	/**
- 	 * @param int $Red
- 	 * @param int $Green
- 	 * @param int $Blue
- 	 * @param int $White
- 	 * @return boolean
- 	 */
- 	public function SetRGBW(int $Red, int $Green, int $Blue, int $White){
-		if($Red>255)$Red=255;else if($Red<0)$Red=0;
-		if($Green>255)$Green=255;else if($Green<0)$Green=0;
-		if($Blue>255)$Blue=255;else if($Blue<0)$Blue=0;
-		if($White>255)$White=255;else if($White<0)$White=0;
- 		if($ok=$this->_forwardData(['P',$Red,$Green,$Blue,$White]))	{
-			$this->_updateByColor($Red, $Green, $Blue, $White);
+ 	public function SetWhite(int $NewWhite){
+ 		if($this->ReadPropertyBoolean('DisableWhiteChannel')){
+ 			echo "White channel disabled";
+ 			return false;
+ 		}
+ 		if($NewWhite>255)$NewWhite=255;elseif($NewWhite<0)$NewWhite=0;
+  		if($this->GetValue('WHITE')==$NewWhite) return true;
+ 		$rgb=rgb::fromInt($this->getValue('COLOR'));
+ 		if($dimSpeed=$this->ReadPropertyInteger('DimSpeed'))
+			return $this->DimRGBW($rgb[RGB_RED], $dimSpeed, $rgb[RGB_GREEN], $dimSpeed, $rgb[RGB_BLUE], $dimSpeed, $NewWhite, $dimSpeed);	
+		return $this->SetRGBW($rgb[RGB_RED], $rgb[RGB_GREEN], $rgb[RGB_BLUE], $NewWhite);	
+ 	}
+ 	
+ 	public function SetRGBW(int $R, int $G, int $B, int $W){
+		if($ok=$this->_forwardData(['P',$R,$G,$B,$W]))	{
+			$this->_updateByColor($R, $G, $B,$W);
+			if($clientID = $this->_getSyncClientID()){
+				return PJX_SetRGBW($clientID,$R, $G, $B, $W);
+			}
 		}
 		return (bool)$ok;
 	}
- 	/**
- 	 * @param int $Red
- 	 * @param int $RZeit
- 	 * @param int $Green
- 	 * @param int $GZeit
- 	 * @param int $Blue
- 	 * @param int $BZeit
- 	 * @param int $White
- 	 * @param int $WZeit
- 	 * @return boolean
- 	 */
- 	public function DimRGBW(int $Red, int $RZeit, int $Green, int $GZeit, int $Blue, int $BZeit, int $White, int $WZeit){
+ 	public function DimRGBW(int $R, int $RTime, int $G, int $GTime, int $B, int $BTime, int $W, int $WTime){
 		$toParam=function($v,$t){
 			return $t>0?hexdec(sprintf('%02x%02x',$t,$v)):$v;
-		};	
-		if($Red>255)$Red=255;else if($Red<0)$Red=0;
-		if($Green>255)$Green=255;else if($Green<0)$Green=0;
-		if($Blue>255)$Blue=255;else if($Blue<0)$Blue=0;
-		if($White>255)$White=255;else if($White<0)$White=0;
-		$data=['P',$toParam($Red,$RZeit),$toParam($Green,$GZeit),$toParam($Blue,$BZeit),$toParam($White,$WZeit)];
+		};		
+		$data=['P',$toParam($R,$RTime),$toParam($G,$GTime),$toParam($B,$BTime),$toParam($W,$WTime)];
  		if($ok=$this->_forwardData($data)){
-			$this->_updateByColor($Red, $Green, $Blue, $White);
+			$this->_updateByColor($R, $G, $B,$W);
+			if($clientID = $this->_getSyncClientID()){
+				return PJX_DimRGBW($clientID,$R, $RTime, $G, $GTime, $B, $BTime, $W, $WTime);
+			}
  		}
  		return (bool)$ok;
 	}
-	/**
-	 * @return boolean
-	 */
 	public function DimUp(){
-		return (($level=$this->getValueByIdent('LEVEL'))<100) ? $this->SetLevel($level+5):true;
+		return (($level=$this->getValue('LEVEL'))<100) ? $this->SetLevel($level+5):true;
  	}
- 	/**
- 	 * @return boolean
- 	 */
  	public function DimDown(){
-		return (($level=$this->getValueByIdent('LEVEL'))>0) ? $this->SetLevel($level-5):true;
+		return (($level=$this->getValue('LEVEL'))>0) ? $this->SetLevel($level-5):true;
  	}
-	/**
-	 * @param int $Programm
-	 * @return boolean
-	 */
-	public function RunProgram(int $Programm){
-		if($ok=$this->_forwardData(['F',$Programm])){
-			
+	
+	public function RunProgram(int $Type){
+		if($ok=$this->_forwardData(['F',$Type])){
+			if($clientID = $this->_getSyncClientID()){
+				return PJX_RunProgram($clientID,$Type);
+			}
 		}
 		return (bool)$ok;
 	}
- 
-	private function MaintainActions($actions, $enabled){
-		if(is_array($actions))foreach($actions as $a)@$this->MaintainAction($a,$enabled);
+
+	
+	private function _enableActions(array $actions){
+		foreach($actions as $a)$this->enableAction($a);
 	}
-	private function toRGB($Color){
-		return [
-			RGB_RED=>($Color >> 16) & 0xFF,
-			RGB_GREEN=>($Color >> 8) & 0xFF,
-			RGB_BLUE=>$Color & 0xFF	
-		];
+	
+	private function _getSyncClientID(){
+		if($clientID = $this->ReadPropertyInteger('SyncClient')){
+			if(!IPS_InstanceExists($clientID)){
+				$msg= "SyncClient Instance $clientID missing";
+			}elseif (IPS_GetInstance($clientID)['ModuleInfo']['ModuleID']!='{19650302-C001-0000-DE01-2020PRO10000}'){
+				$msg="Select SyncClient Instance $clientID is not a ProJetX Module";
+			}elseif($clientID == $this->InstanceID){
+				$msg= "Selected SyncClient Instance $clientID can not Sync with self";
+			}else{
+				$this->SetBuffer('LastError','');
+				if($this->GetStatus()==300){
+					$this->SetStatus(102);
+				}
+				return $clientID;	
+			}
+			$this->SetBuffer('LastError',$msg);
+			IPS_LogMessage(IPS_GetName($this->InstanceID),$msg);
+			$this->SetStatus(300);
+		} else {
+			$this->SetBuffer('LastError','');
+			if($this->GetStatus()==300){
+				$this->SetStatus(102);
+			}
+		}
 	}
-	private function toColor($rgb){
-		return ($rgb[RGB_RED] << 16) + ($rgb[RGB_GREEN] << 8) + $rgb[RGB_BLUE];
-	}
-	private function setValueByIdent( $ident, $value, $force=false){
-		if( ($id=@$this->GetIDForIdent($ident)) && ($force || GetValue($id)!=$value))return SetValue($id,$value);
-		return ($id>0);
-	}
-	private function getValueByIdent( $ident){
-		return ($id=@$this->GetIDForIdent($ident))?GetValue($id):null;
-	}
-	private function _setWhite($Value){
-		if($this->getValueByIdent('WHITE')==$Value)return;
-		$rgb=$this->toRGB($this->getValueByIdent('COLOR'));
- 		if($dimSpeed=$this->ReadPropertyInteger('DimSpeed'))
-			 $this->DimRGBW($rgb[RGB_RED], $dimSpeed, $rgb[RGB_GREEN], $dimSpeed, $rgb[RGB_BLUE], $dimSpeed, (int)$Value, $dimSpeed);	
-		else $this->SetRGBW($rgb[RGB_RED], $rgb[RGB_GREEN], $rgb[RGB_BLUE], (int)$Value);	
-	}
-	private function _setColor($id, $Value){
-		$rgb=$this->toRGB($this->getValueByIdent('COLOR'));
-		if($rgb[$id]==$Value)return;
- 		$rgb[$id]=(int)$Value;
- 		$w=$this->getValueByIdent('WHITE');
- 		if($dimSpeed=$this->ReadPropertyInteger('DimSpeed'))
-			 $this->DimRGBW($rgb[RGB_RED], $dimSpeed, $rgb[RGB_GREEN], $dimSpeed, $rgb[RGB_BLUE], $dimSpeed, $w, $dimSpeed);	
-		else $this->SetRGBW($rgb[RGB_RED], $rgb[RGB_GREEN], $rgb[RGB_BLUE], $w);
-	}
+	
  	private function _updateByColor($r,$g,$b,$w){
- 		$this->setValueByIdent('COLOR', $this->toColor([$r, $g, $b]));
- 		$this->setValueByIdent('LEVEL', $level=(int)round(max($r,$g,$b)/2.55));
- 		$this->setValueByIdent('STATE', $level > 0|| $w > 0);
- 		$this->setValueByIdent('WHITE', $w);
- 		if($this->ReadPropertyInteger('Mode')==1){ // Splitt Channels
- 			$this->setValueByIdent('RED', $r);
- 			$this->setValueByIdent('GREEN', $g);
- 			$this->setValueByIdent('BLUE', $b);
+ 		$oldColor = $this->getValue('COLOR');
+ 		$this->setValue('COLOR', $newColor=rgb::toInt($r, $g, $b));
+ 		$this->setValue('LEVEL', $level=round(max($r,$g,$b)/2.55));
+ 		if($newColor!=$oldColor){
+ 			$this->WriteAttributeInteger('LAST_COLOR',$newColor? $newColor: $oldColor);
  		}
-	}
-	private function _saveState(){
-		if($v=$this->getValueByIdent('COLOR'))$this->SetBuffer('OnColor',$v);
-		$this->SetBuffer('OnWhite',$this->getValueByIdent('WHITE'));
-	}
+
+ 		if(!$this->ReadPropertyBoolean('DisableWhiteChannel')){
+ 			$oldWhite = $this->getValue('WHITE');
+ 			$this->setValue('WHITE', $w);
+	  		if($w!=$oldWhite){
+	 			$this->WriteAttributeInteger('LAST_WHITE', $w?$w:$oldWhite);
+	 		}
+ 		}
+ 		$this->SetValue('STATE', $level!=0 || $w>0);
+ 		if($this->ReadPropertyInteger('Mode')>0){ // Splitt Mode
+ 			$this->setValue('RED', $r);
+ 			$this->setValue('GREEN', $g);
+ 			$this->setValue('BLUE', $b);
+ 		}
+ 	}
 	private function _downState(){
-		$this->_saveState();
-		$this->SetRGBW(0, 0, 0, 0);
+		if($dimSpeed=$this->ReadPropertyInteger('DimSpeed'))
+			$this->DimRGBW(0, $dimSpeed, 0, $dimSpeed, 0, $dimSpeed, 0, $dimSpeed);			
+		else 
+			$this->SetRGBW(0, 0, 0, 0);
 	}
+	
 	private function _upState(){
-		if(!($Color=intval($this->GetBuffer('OnColor'))))$Color=8421504;
-		$w=intval($this->GetBuffer('OnWhite'));
-		$rgb=$this->toRGB($Color);
- 		if($dimSpeed=$this->ReadPropertyInteger('DimSpeed'))
-			return $this->DimRGBW($rgb[RGB_RED], $dimSpeed, $rgb[RGB_GREEN], $dimSpeed, $rgb[RGB_BLUE], $dimSpeed, $w, $dimSpeed);	
-		return $this->SetRGBW($rgb[RGB_RED], $rgb[RGB_GREEN], $rgb[RGB_BLUE], $w);	
-		
-		
+		$rgb=($onColor=$this->ReadAttributeInteger('LAST_COLOR'))?rgb::fromInt($onColor):[RGB_RED=>128,RGB_GREEN=>128,RGB_BLUE=>128];
+ 		$w= $this->ReadPropertyBoolean('DisableWhiteChannel')? 0: $this->ReadAttributeInteger('LAST_WHITE');
+		if($dimSpeed=$this->ReadPropertyInteger('DimSpeed'))
+			$this->DimRGBW($rgb[RGB_RED], $dimSpeed, $rgb[RGB_GREEN], $dimSpeed, $rgb[RGB_BLUE], $dimSpeed, $w, $dimSpeed);			
+		else 
+			$this->SetRGBW($rgb[RGB_RED], $rgb[RGB_GREEN], $rgb[RGB_BLUE], $w);
 	}
+	
 	private function _forwardData(array $value){
-		$data=[
-				'DataID'=>"{9DD17B0B-030F-4849-8BFF-88EB4BB414BA}",
-				'Data'	=>$this->ReadPropertyInteger('DeviceID').','.implode(',',$value)
-		];
-		if(!$value=@$this->SendDataToParent(json_encode($data)))
-			IPS_LogMessage(IPS_GetName($this->InstanceID),'Error sending data to Device');
-		$this->SendDebug('ForwardData',($value?'OK send => ':'Error send => ').json_encode($data['Data']),0);	
-			
+		$this->SendDebug(__FUNCTION__,'Send:'.implode(',',$value),0);
+		$data['DataID']="{9DD17B0B-030F-4849-8BFF-88EB4BB414BA}";
+		$data['Data']=$this->ReadPropertyInteger('DeviceID').','.implode(',',$value);
+		$data=json_encode($data);
+		$this->SendDebug(__FUNCTION__,'Send:'.$data,0);
+		if(!$value=@$this->SendDataToParent($data)){
+			IPS_LogMessage(__CLASS__,'Error sending data to Device');
+			return true;
+		} else	
+			$this->SendDebug(__FUNCTION__,'Return:'.var_export($value,true),0);
 		return $value;		
 	}
+	
+	protected function setValue( $ident, $value){
+		if( (($id=@$this->GetIDForIdent($ident)) && GetValue($id)!=$value))return SetValue($id,$value);
+		return ($id>0);
+	}
+	protected function getValue( $ident){
+		return ($id=@$this->GetIDForIdent($ident))?GetValue($id):null;
+	}
+ 	
+	
 }
-const RGB_RED=0,RGB_GREEN=1,RGB_BLUE=2;
 ?>

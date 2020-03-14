@@ -1,18 +1,55 @@
 {
     "elements": [
-        { "name": "DeviceID",		"type": "NumberSpinner",	"caption": "Device ID"},
-        { "name": "Mode",			"type": "Select",			"caption": "Mode",  "options": [
-                { "label": "RGB+W", "value": 0},
-                { "label": "Split Channels", "value": 1}
+        {
+            "name": "DeviceID",
+            "type": "NumberSpinner",
+            "caption": "Device ID"
+        },
+        {
+            "name": "DimSpeed",
+            "type": "NumberSpinner",
+            "caption": "Dim Speed (0=off)",
+            "minimum":0,
+            "maximum":10,
+            "suffix": "Seconds"
+        },
+        {
+            "name": "DisableWhiteChannel",
+            "type": "Select",
+            "caption": "White Channel",
+            "options": [
+                {
+                    "label": "Enabled",
+                    "value": false
+                },
+                {
+                    "label": "Disabled",
+                    "value": true
+                }
             ]
         },
-        { "name": "DimSpeed",		"type": "NumberSpinner",	"caption": "Dimming speed", "suffix":"Seconds"}
-   ],
-    "actions": [
-        { "name": "ValueR", "type": "NumberSpinner", "caption": "Red" },
-        { "name": "ValueG",	"type": "NumberSpinner", "caption": "Green"},
-        { "name": "ValueB",	"type": "NumberSpinner", "caption": "Blue"},
-        { "name": "ValueW",	"type": "NumberSpinner", "caption": "White"},
-        { "type": "Button", "label": "Set RGBW", "onClick": "PJX_SetRGBW($id, $ValueR, $ValueG, $ValueB, $ValueW);"}
-    ]
+        {
+            "name": "Mode",
+            "type": "Select",
+            "caption": "Mode",
+            "options": [
+                {
+                    "label": "RGB+W",
+                    "value": 0
+                },
+                {
+                    "label": "Split Channels",
+                    "value": 1
+                }
+            ]
+        },
+        {
+            "name": "SyncClient",
+            "type": "SelectInstance",
+            "caption": "Sync changes to"
+        }
+        
+    ],
+    "actions": [{ "type": "TestCenter"}  ]
+    
 }

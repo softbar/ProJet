@@ -3,8 +3,8 @@
         "de": {
             "Device ID": "Ger\u00e4t-ID",
             "Mode": "Modus",
-            "RGB+W": "RGB+W",
-            "Split Channels": "Teile Kan\u00e4le",
+            "RGB+W": "Nur Farbe",
+            "Split Channels": "RGB Kanäle",
             "R": "Rot",
             "G": "Grün",
             "B": "Blau",
@@ -17,8 +17,11 @@
             "Color":"Farbe",
             "State":"Zustand",
             "Level":"Helligkeit",
-            "Dimming speed":"Dim Geschwindigkeit",
-            "Seconds": "Sekunden"
+            "White Channel":"Weiß Kanal",
+            "Disabled": "Aus",
+            "Enabled": "An",
+            "Dim Speed (0=off)":"Dim Geschwindigkeit (0=aus)",
+            "Seconds":"Sekunden"
         }
     }
 }
