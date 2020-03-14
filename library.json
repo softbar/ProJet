@@ -1,13 +1,12 @@
 {  
-	"id": "{5638FDC0-C110-4112-DE01-201905120000}",  
+	"id": "{19650302-C001-0000-DE01-2020LIB10000}",  
 	"author": "Xaver Bauer",
-	"name": "Xavers ProJet Module",
-	"url": "https://github.com/softbar/ProJet/",
+	"name": "ProJet RGBW-868 LED Stripe",
+	"url": "",
 	"compatibility": {
-		"version": "4.2",
-		"date": 1492639200
+		"version": "5.2"
 	},
-	"version": "1.9",  
-	"build": 1900,
-	"date": 1560123301
+	"version": "1.0",  
+	"build": 1000,
+	"date": 1574439468
 }
